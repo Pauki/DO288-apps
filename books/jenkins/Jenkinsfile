@@ -58,12 +58,10 @@ pipeline {
 
                 echo '### Creating a new app in DEV env ###'
                 sh '''
-
- 			oc project ${DEV_PROJECT}
-
- 			oc new-app --as-deployment-config --name books nodejs:12~${APP_GIT_URL} --build-env npm_config_registry=${NEXUS_SERVER} --context-dir ${APP_NAME}
-			oc expose svc/${APP_NAME}
-		 '''
+                        oc project ${DEV_PROJECT}
+                        oc new-app  --as-deployment-config --name books nodejs:12~${APP_GIT_URL} --build-env npm_config_registry=${NEXUS_SERVER} --context-dir ${APP_NAME}
+                        oc expose svc/${APP_NAME}
+                   '''
             }
         }
 
@@ -105,13 +103,10 @@ pipeline {
                     input message: "Promote to Staging?"
                 }
                 script {
-
- openshift.withCluster() {
-
- openshift.tag("${DEV_PROJECT}/books:latest", "${STAGE_PROJECT}/books:stage")
-
- }
-
+                    openshift.withCluster() {
+                    openshift.tag("${DEV_PROJECT}/books:latest", "${STAGE_PROJECT}/books:stage")
+                    }
+                }
             }
         }
 
@@ -126,14 +121,10 @@ pipeline {
 
                 echo '### Creating a new app in Staging ###'
                 sh '''
-
- oc project ${STAGE_PROJECT}
-
- oc new-app --as-deployment-config --name books -i books:stage
-
- oc expose svc/${APP_NAME}
-
- '''
+                        oc project ${STAGE_PROJECT}
+                        oc new-app --name books -i books:stage --as-deployment-config
+                        oc expose svc/${APP_NAME}
+                   '''
             }
         }
 
@@ -146,17 +137,11 @@ pipeline {
 
                     openshift.withCluster() {
                         openshift.withProject( "${STAGE_PROJECT}" ) {
-
- def deployment = openshift.selector("dc", "${APP_NAME}").rollout()
-
- openshift.selector("dc", "${APP_NAME}").related('pods').untilEach(1) {
-
- return (it.object().status.phase == "Running")
-
- }
-
-}
-
+                            def deployment = openshift.selector("dc", "${APP_NAME}").rollout()
+                            openshift.selector("dc", "${APP_NAME}").related('pods').untilEach(1) {
+                                return (it.object().status.phase == "Running")
+                            }
+                        }
                         echo "Deployment to Staging env is complete. Access the app at the URL http://${routeHost}."
                     }
                 }
